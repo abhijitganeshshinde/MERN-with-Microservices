@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import urls from "./urls";
 
 function Home() {
   const [message, setMessage] = useState("");
@@ -7,7 +8,7 @@ function Home() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/")
+      .get(urls.HELLO_SERVICE_URL)
       .then((response) => {
         setMessage(response.data.msg);
       })
@@ -16,7 +17,7 @@ function Home() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3002/fetchUser")
+      .get(urls.PROFILE_SERVICE_URL+"fetchUser")
       .then((response) => {
         setProfile(response.data);
         

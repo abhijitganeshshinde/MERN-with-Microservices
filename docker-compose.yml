@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  hello_service:
+    image: helloservice:v1.0
+    deploy:
+      replicas: 2
+    build: 
+      context: ./backend/helloService
+      dockerfile: Dockerfile
+
+  profile_service:
+    image: profileservice:v1.0
+    deploy:
+      replicas: 2
+    build: 
+      context: ./backend/profileService
+      dockerfile: Dockerfile
+
+  frontend_service:
+    image: frontendservice:v1.0
+    deploy:
+      replicas: 2
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
