@@ -1,0 +1,106 @@
+pipeline {
+    agent any 
+    environment {
+        AWS_ACCESS_KEY_ID = ${AWS_ACCESS_KEY_ID}
+        AWS_SECRET_ACCESS_KEY = ${AWS_SECRET_ACCESS_KEY}
+        AWS_ACCOUNT_ID = ${AWS_ACCOUNT_ID}
+        AWS_DEFAULT_REGION = ${AWS_DEFAULT_REGION}
+        IMAGE_REPO_NAME = 'abhi-helloservice'
+        IMAGE_TAG = sh(returnStdout: true, script: 'echo $BUILD_NUMBER').trim()
+        REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+        NODE_VERSION = '18.17.0'
+    }
+    stages {
+        stage('Print Environment Variables') {
+            steps {
+                script {
+                    env.each { key, value ->
+                        echo "${key} = ${value}"
+                    }
+                }
+            }
+        }
+        stage('Logging into AWS ECR') {
+            steps {
+                script {
+                    sh "aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}"
+                    sh "aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}"
+                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                }
+            }
+        }
+        stage('Create .env File') {
+            steps {
+                // Create .env file content
+                script {
+                    writeFile file: '.env', text: '''
+                        PORT=3001
+                    '''
+                }
+            }
+        }
+        stage('Setup Node.js') {
+            steps {
+                script {
+                    // Install Node.js using nvm
+                    sh "nvm install ${NODE_VERSION}"
+                    sh "nvm use ${NODE_VERSION}"
+                }
+            }
+        }
+        stage('Checkout Code') {
+            steps {
+                // Git checkout step remains unchanged
+                checkout scm: git(
+                    branches: [[name: '*/master']],
+                    userRemoteConfigs: [[
+                        credentialsId: '7f5ce0e7-77ca-433d-8286-e0e8a14d95b2',
+                        url: 'https://git-codecommit.ap-south-1.amazonaws.com/v1/repos/Hello_Backend-Abhi'
+                    ]]
+                )
+            }
+        }
+        stage('Build Project') {
+            steps {
+                script {
+                    // Copy .env file to the project location
+                    sh 'cp .env ./project_folder/.env' // Update with the correct path
+                    // Build Node.js project
+                    def npmBuild = sh(script: 'cd ./project_folder && npm install && npm run build', returnStatus: true)
+                    if (npmBuild == 0) {
+                        echo 'npm build succeeded. Proceeding to Docker image build...'
+                    } else {
+                        echo 'npm build failed. Skipping Docker Image build...'
+                        currentBuild.result = 'FAILURE'
+                        error('npm build failed')
+                    }
+                }
+            }
+        }
+        stage('Building image') {
+            steps {
+                script {
+                    dockerImage = docker.build("${IMAGE_REPO_NAME}:${IMAGE_TAG}")
+                }
+            }
+        }
+        stage('Testing image') {
+            steps {
+               sh "docker inspect ${IMAGE_REPO_NAME}:${IMAGE_TAG}"
+            }
+        }
+        stage('Pushing to ECR') {
+            steps {
+                script {
+                    sh "docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:${IMAGE_TAG}"
+                    sh "docker push ${REPOSITORY_URI}:${IMAGE_TAG}"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            sh 'docker logout'
+        }
+    }
+}
