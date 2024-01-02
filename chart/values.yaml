@@ -1,0 +1,35 @@
+name: nodejs-app-service
+replicaCount: 2
+
+images:
+  abhi-feservice:
+    repository: public.erc.aws/c3w1m1q2
+    tag: 5
+  abhi-helloservice:
+    repository: public.erc.aws/c3w1m1q2
+    tag: 3
+  abhi-profileservice:
+    repository: public.erc.aws/c3w1m1q2
+    tag: 21
+
+resources:
+  limits:
+    memory: 512Mi
+    cpu: "1"
+  requests:
+    memory: 512Mi
+    cpu: "0.2"
+
+services:
+  - name: helloservice
+    port: 3001
+  - name: profileservice
+    port: 3002
+  - name: frontservice
+    port: 3000
+
+service:
+  protocol: TCP
+  port: 80
+  targetPort: 8080
+  type: LoadBalancer

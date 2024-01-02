@@ -1,0 +1,4 @@
+apiVersion: v2
+name: my-nodejs-app-chart
+description:  This is a helm chat for microservice that we were creating
+version: 0.1.0
