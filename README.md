@@ -127,6 +127,17 @@ For an example of creating an Auto Scaling Group using Boto3, refer to the file 
 ### Step 10: Kubernetes (EKS) Deployment
 
 1. **Create an EKS cluster using eksctl or other tools:**
+  - **Install eksctl on Ubuntu:**
+    - Open Terminal.
+    - Run the following commands to install eksctl:
+      ```bash
+      sudo apt-get update
+      curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.28.5/2024-01-04/bin/linux/amd64/kubectl
+      chmod +x ./kubectl
+      mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
+      kubectl version --client
+      ```
+       For more details, refer to the [ official installation guide for kubectl](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
    - **Install eksctl on Windows:**
      - Open PowerShell or Command Prompt.
      - Run the following command to install eksctl using Chocolatey:
@@ -135,20 +146,37 @@ For an example of creating an Auto Scaling Group using Boto3, refer to the file 
        ```
 
    - **Create an EKS cluster with eksctl:**
-     Use the following command to create an EKS cluster using eksctl:
-     ```sh
-     eksctl create cluster --name <CLUSTER_NAME> --region <AWS_REGION> --nodegroup-name <NODEGROUP_NAME> --node-type <NODE_TYPE> --nodes <NODES_COUNT> --nodes-min <MIN_NODES> --nodes-max <MAX_NODES>
-     ```
-     Replace the placeholders with your specific cluster configuration:
-     - `<CLUSTER_NAME>`: Replace with your desired EKS cluster name (e.g., mern-abhi).
-     - `<AWS_REGION>`: Replace with your AWS region (e.g., us-east-1).
-     - `<NODEGROUP_NAME>`: Replace with your node group name (e.g., standard-workers).
-     - `<NODE_TYPE>`: Replace with the desired EC2 instance type for your nodes (e.g., t3.micro).
-     - `<NODES_COUNT>`: Replace with the number of nodes for your cluster (e.g., 4).
-     - `<MIN_NODES>`: Replace with the minimum number of nodes for your cluster (e.g., 2).
-     - `<MAX_NODES>`: Replace with the maximum number of nodes for your cluster (e.g., 4).
+     - Update the Kubernetes configuration for the EKS cluster: aws eks update-kubeconfig --name mern-abhi3 --region ap-south-1
 
-2. Deploy the MERN application using Helm on EKS.
+     - Use the following command to create an EKS cluster using eksctl:
+         ```sh
+         eksctl create cluster --name <CLUSTER_NAME> --region <AWS_REGION> --nodegroup-name <NODEGROUP_NAME> --node-type <NODE_TYPE> --nodes <NODES_COUNT> --nodes-min <MIN_NODES> --nodes-max <MAX_NODES>
+         --vpc-private-subnets=<SUBNET-ID>,<SUBNET-ID>,<SUBNET-ID>
+
+         ```
+     - Replace the placeholders with your specific cluster configuration:
+        - `<CLUSTER_NAME>`: Replace with your desired EKS cluster name (e.g., mern-abhi).
+        - `<AWS_REGION>`: Replace with your AWS region (e.g., us-east-1).
+        - `<NODEGROUP_NAME>`: Replace with your node group name (e.g., standard-workers).
+        - `<NODE_TYPE>`: Replace with the desired EC2 instance type for your nodes (e.g., t3.micro).
+        - `<NODES_COUNT>`: Replace with the number of nodes for your cluster (e.g., 4).
+        - `<MIN_NODES>`: Replace with the minimum number of nodes for your cluster (e.g., 2).
+        - `<MAX_NODES>`: Replace with the maximum number of nodes for your cluster (e.g., 4).
+        - `<SUBNET-ID>`: Replace with vpc private subnets id
+
+2. Deploying the MERN Application:
+   - Update the Kubernetes configuration for the EKS cluster:
+      ```
+      - aws eks update-kubeconfig --name mern-abhi3 --region ap-south-1
+      ```
+   - Deploy the application using the deployment YAML file:
+      ```
+      kubectl apply -f deploy.yml
+      ```
+   - Check 
+      ```
+      kubectl get svc mern-abhi3
+      ```
 3. **Install Helm on Windows using Chocolatey:**
    - Open PowerShell or Command Prompt with administrative privileges.
    - Run the following command to attempt installing Helm using Chocolatey:
@@ -156,8 +184,59 @@ For an example of creating an Auto Scaling Group using Boto3, refer to the file 
      choco install kubernetes-helm
      ```
     - Check the [Chocolatey Helm package page](https://community.chocolatey.org/packages/kubernetes-helm) for updates or availability.
-    - 
+  
+4. Setting up MicroK8s
+   - Install and configure MicroK8s:
+      ```
+      sudo usermod -a -G microk8s $USER
+      sudo chown -f -R $USER ~/.kube
+      su - $USER
+      microk8s status --wait-ready
+      sudo usermod -a -G microk8s ubuntu
+      sudo chown -R ubuntu ~/.kube
+      ```
+5. Install Helm
+   sudo snap install helm --classic
 
+6. Folder Structure of a Helm Chart And Deploying with Helm:
+   - Folder Structure of a Helm Chart :
+     - A typical Helm chart has a predefined directory structure. Understanding this structure is crucial for organizing your Kubernetes resources correctly. Below is an example of the folder structure for a Helm chart:
+         ```
+         chart/
+            │
+            ├── Chart.yaml          # A YAML file containing information about the chart
+            ├── values.yaml         # The default configuration values for the chart
+            ├── templates/          # A directory of templates that, when combined with values, will generate valid Kubernetes manifest files
+               ├── deployment.yaml # Defines the deployment configuration
+               ├── service.yaml    # Defines the service resource
+               └── ...
+
+         ```
+   - Deploying the MERN Application with Helm:
+      - To deploy your application with Helm:
+        - Ensure your application's Helm chart follows the above folder structure.
+        - Navigate to the directory where your Helm chart (chart/) is located.
+        - Deploy your application using the Helm command:
+            ```
+            helm install mern-release ./chart
+            ```
+            mern-release: The name of your Helm release.
+            ./chart: The path to your chart directory.
+   - Checking the Status of the Release:
+      ```
+      helm status mern-release
+      ```
+      This command provides detailed information about the release, including its state, revisions, release notes, and more.
+   - Deleting the Release:
+      - If you need to delete the Helm release for any reason, such as to redeploy with different settings or to clean up resources, use the following command:
+         ```
+         helm delete mern-release
+         ```
+         
+         This command will remove the release and all the Kubernetes resources associated with it from your cluster.
+
+         mern-release: The name of the Helm release you wish to delete.
+      
 ### Step 11: Monitoring and Logging
 
 
@@ -209,11 +288,6 @@ For an example of creating an Auto Scaling Group using Boto3, refer to the file 
     - Jenkins triggers CI/CD jobs on new commits, building and pushing Docker images to ECR.
     - Kubernetes (EKS) deploys the MERN application using Helm charts.
     - CloudWatch monitors performance metrics and sets alarms for critical thresholds.
-
-    #### Note:
-    
-    For a more detailed architecture diagram and deployment process, refer to our [documentation folder](path/to/documentation) in the repository.
-
 
 ## Additional Notes
 

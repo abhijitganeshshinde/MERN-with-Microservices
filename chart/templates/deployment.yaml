@@ -15,7 +15,8 @@ spec:
       containers:
       {{- range .Values.services }}
         - name: {{ .name }}
-          image: "{{ index $.Values.images .name }}:{{ index $.Values.images .tag }}"
+            image: "{{ .repository }}:{{ .tag }}"
+            imagePullPolicy: Always
           resources:
             limits:
               memory: {{ $.Values.resources.limits.memory }}

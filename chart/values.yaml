@@ -1,15 +1,15 @@
-name: nodejs-app-service
+name: mern-abhi
 replicaCount: 2
 
 images:
-  abhi-feservice:
-    repository: public.erc.aws/c3w1m1q2
+  - name: abhi-feservice
+    repository: public.erc.aws/c3w1m1q2/abhi-feservice
     tag: 5
-  abhi-helloservice:
-    repository: public.erc.aws/c3w1m1q2
+  - name: abhi-helloservice
+    repository: public.erc.aws/c3w1m1q2/abhi-helloservice
     tag: 3
-  abhi-profileservice:
-    repository: public.erc.aws/c3w1m1q2
+  - name: abhi-profileservice
+    repository: public.erc.aws/c3w1m1q2/abhi-profileservice
     tag: 21
 
 resources:
@@ -22,14 +22,22 @@ resources:
 
 services:
   - name: helloservice
+    repository: public.erc.aws/c3w1m1q2/abhi-helloservice
+    tag: 3
     port: 3001
   - name: profileservice
+    repository: public.erc.aws/c3w1m1q2/abhi-profileservice
+    tag: 21
     port: 3002
   - name: frontservice
+    repository: public.erc.aws/c3w1m1q2/abhi-feservice
+    tag: 5
     port: 3000
 
 service:
-  protocol: TCP
-  port: 80
-  targetPort: 8080
+  name: mern-abhi
+  ports:
+    protocol: TCP
+    port: 80
+    targetPort: 8080
   type: LoadBalancer
